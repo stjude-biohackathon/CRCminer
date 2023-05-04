@@ -1,0 +1,29 @@
+[tool.poetry]
+name = "crcminer"
+version = "0.1.0"
+description = "An intuitive, yet expansive, python package to identify core regulatory circuitries (CRCs), explore gene regulatory networks (GRNs), and interactively visualize TF & enhancer networks."
+authors = [
+    "Jared Andrews <jared.andrews07@gmail.com>", 
+    "Achisha Saikia <achishas@buffalo.edu>", 
+    "Srinidhi Varadharajan <srinidhi.varadharajan@stjude.org>", 
+    "Pandurang Kolekar <pandurang.kolekar@stjude.org>", 
+    "Sridhar N <sridhar@wustl.edu>", 
+    "Vidhya Jagannathan <Vidhya.Jagannathan@unibe.ch>"
+    ]
+license = "MIT"
+readme = "README.md"
+
+[tool.poetry.dependencies]
+python = "^3.9"
+pymemesuite = "^0.1.0a2"
+pyfaidx = "^0.7.2.1"
+biopython = "^1.81"
+networkx = "^3.1"
+pyranges = "^0.0.124"
+
+[tool.poetry.group.dev.dependencies]
+Sphinx = "^7.0.0"
+
+[build-system]
+requires = ["poetry-core"]
+build-backend = "poetry.core.masonry.api"
