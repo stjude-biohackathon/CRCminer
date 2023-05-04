@@ -1,4 +1,3 @@
-
 import os
 import logging
 import argparse
@@ -105,13 +104,8 @@ def networkX_helpers(input_TFbed):
               
               
   sortCliqueRanking = sorted(cliqueRanking, reverse=True, key=lambda x:x[1])
-
   
   return  sortCliqueRanking # may be write this to table?
-
-
-
-
 
 
 DESCRIPTION = '''
