@@ -1,6 +1,4 @@
 import click
-
-
 # Command Group
 @click.group(name='CRCminer')
 def cli_tools():
@@ -8,20 +6,20 @@ def cli_tools():
     pass
 
 @cli_tools.command(name='mine', help='mines for CRC')
-@click.option('--fasta', help='fasta')
-@click.option('--enhancer', help='ROSE2 output of annotated (super)enhancers')
-@click.option('--mapping', help='Motif ID to gene ID mapping file.')
+@click.option('--fasta', type=click.Path(),help='fasta')
+@click.option('--enhancer', type=click.Path(), help='ROSE2 output of annotated (super)enhancers')
+@click.option('--mapping', type=click.Path(), help='Motif ID to gene ID mapping file.')
 def test(fasta,enchancer,mapping):
     pass
 
 @cli_tools.command(name='compare', help='compare two networks')
-@click.option('--edgelist1',help='edgelist from sampleX')
-@click.option('--edgelist2',help='edgelist from sampleY')
+@click.option('--edgelist1', type=click.Path(), help='edgelist from sampleX')
+@click.option('--edgelist2', type=click.Path(), help='edgelist from sampleY')
 def test2(edgelist1,edgelist2):
     pass
 
 @cli_tools.command(name='report', help='report vizualization')
-@click.option('--indir',help='input directory CRCminer results')
+@click.option('--indir',type=click.Path(),help='input directory CRCminer results')
 
 def test3(indir):
     pass
