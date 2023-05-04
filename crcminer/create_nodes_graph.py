@@ -14,16 +14,28 @@ debug = l.debug; info = l.info; warning = l.warning; error = l.error
 
 
 def parse_bed(_infile):
-     import pandas as pd
-     df.read_csv(_infile, sep='\t')
-     df = df[['gene','motif']] # these names are mocked. 
-     df2=df.dropna()
-     df2=df2.assign(gene=df2['gene'].str.split(','), 
-     motif=df2['motif'].str.split(',')).explode('gene').explode('motif').reset_index(drop=True)
-     # print(df.head())
-     _list=df2.values.tolist() # edgelist
-     
-     return _list
+    '''
+    input: motif bed file 
+      chr	st	en	gene	motif
+    chr1	10	20	A,B,C	BAR
+    chr1	11	21	FOO	X,Y,Z
+    chr1	1111	1121	JANE1	DOE
+    chr1	11131	11421		FOO1
+    chr1	11151	11521	BAR1
+    output:
+    edgelist: [['A', 'BAR'], ['B', 'BAR'], ['C', 'BAR'], ['FOO', 'X'], ['FOO', 'Y'], ['FOO', 'Z'], ['JANE1', 'DOE']]
+
+    '''
+    import pandas as pd
+    df = pd.read_csv(_infile, sep='\t')
+    df = df[['gene','motif']] # these names are mocked. 
+    df2=df.dropna()
+    df2=df2.assign(gene=df2['gene'].str.split(','), 
+    motif=df2['motif'].str.split(',')).explode('gene').explode('motif').reset_index(drop=True)
+    # print(df.head())
+    _list=df2.values.tolist() # edgelist
+    
+    return _list
 
 
 def networkX_helpers(input_TFbed):
@@ -63,6 +75,9 @@ def networkX_helpers(input_TFbed):
   info("Calculating indegree outdegree stats")
   InDegreeDict = _graph.in_degree()
   OutDegreeDict = _graph.out_degree()
+
+  # writing this out to a file
+
 
   info("Fetching self Loops")
   # Self loops
