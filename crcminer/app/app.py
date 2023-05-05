@@ -9,6 +9,7 @@ import dash_bootstrap_components as dbc
 from dash import Input, Output, dcc, State, html
 import dash_cytoscape as cyto
 import pandas as pd
+import plotly.express as px
 
 
 # Styles for network
@@ -113,11 +114,15 @@ logoContent = dbc.CardImg(src=logoImageUrl, style={'height':'10%'}, top=True)
 
 # Sample Data load from csv
 
-fname = "./data/sample.csv"
+fname = "./data/sample_2.csv"
 netInputDf = readFile(fname)
 
-metafn = "./data/nodes.csv"
+metafn = "./data/nodes_2.csv"
 metaDf = readFile(metafn)
+
+cliqueFn = "./data/TF_Degrees.csv"
+cliqueDf = pd.read_csv(cliqueFn).sort_values(by = 'TF_CliqueFraction', ascending=False)
+cliquePlot = px.bar(data_frame=cliqueDf, x = 'TF', y='TF_CliqueFraction')
 
 nodes = getUniqueNodes(netInputDf['node'].unique(), netInputDf['edge'], metaDict, metaDf)
 edges = getEdges(netInputDf['node'], netInputDf['edge'])
@@ -250,7 +255,7 @@ tab1_content = dbc.Card(
 tab2_content = dbc.Card(
     dbc.CardBody(
         [
-            html.P("Network visualization:", className="card-text"),
+            html.H5("Network visualization:", className="card-text"),
             #dcc.Input(id="input2", type="text", placeholder="Gene", debounce=True),
             dbc.Row([
                 dbc.Col(
@@ -262,9 +267,38 @@ tab2_content = dbc.Card(
                         layout={
                             'name': 'cose', 'directed' : True,
                         }
-                    )
+                    ), width=8
                 ),
                 dbc.Col([
+                    dbc.Badge(
+                            "In Degree >=:", color="info", className="mr-1"
+                        ),
+                    
+                    dcc.Dropdown(
+                            id="inDegree",
+                                options=[
+                                        {"label": k, "value": k} for k in range(metaDf['In'].min(), metaDf['In'].max())
+                                ],
+                                    clearable=False,
+                                    value=metaDf['In'].min(),
+                                    style={"width": "80px"},
+                        ),
+
+                    dbc.Badge(
+                            "Out Degree >=:", color="info", className="mr-1"
+                        ),
+                    
+                    dcc.Dropdown(
+                            id="outDegree",
+                                options=[
+                                        {"label": k, "value": k} for k in range(metaDf['Out'].min(), metaDf['Out'].max())
+                                ],
+                                    clearable=False,
+                                    value=metaDf['Out'].min(),
+                                    style={"width": "80px"},
+                        ),
+
+
                     dbc.Badge(
                             "Nodes:", color="info", className="mr-1"
                         ),
@@ -279,8 +313,22 @@ tab2_content = dbc.Card(
                                     ],
                                     value=list(metaDf['node'].unique()),
                                     multi=True,
-                                    style={"width": "50%"},
+                                    style={"width": "80%"},
                                 ),
+                    dbc.Badge(
+                            "Layout:", color="info", className="mr-1"
+                    ),
+
+                    dcc.Dropdown(
+                            id='dropdown-update-layout',
+                            value='cose',
+                            clearable=False,
+                            options=[
+                                {'label': name.capitalize(), 'value': name}
+                                for name in ['grid', 'random', 'circle', 'cose', 'concentric']
+                            ]
+                    ),
+                    
             ]),
 
             ]),
@@ -296,8 +344,8 @@ tab2_content = dbc.Card(
 tab3_content = dbc.Card(
     dbc.CardBody(
         [
-            html.P("Network visualization:", className="card-text"),
-            cytoObject,
+            html.H5("Clique fraction plot: ", className="card-text"),
+            dcc.Graph(figure=cliquePlot),
             #network2,
         ]
     ),
@@ -369,6 +417,37 @@ def filter_nodes(selectNodes):
     subNodes = getUniqueNodes(filterDf['node'].unique(), filterDf['edge'], metaDict, metaDf)
     subEdges = getEdges(filterDf['node'], filterDf['edge'])
     return subNodes + subEdges
+
+
+@app.callback(
+    Output("nodeDropdown", "options"),
+    Output("nodeDropdown", "value"),
+    [
+        Input("inDegree", "value"),
+        Input("outDegree", "value"),
+    ],
+)
+def filter_nodes(inputDegree, outputDegree):
+    # Generate node list
+    genes = list(metaDf.loc[(metaDf['In'] >= inputDegree) & (metaDf['Out'] >= outputDegree), 'node'])
+    dropOptions = [
+                                        {
+                                            "label": i,
+                                            "value": i,
+                                        }
+                                        for i in genes
+                                    ]
+    return dropOptions, genes
+
+
+@app.callback(Output('cytoscape-layout-2', 'layout'),
+              Input('dropdown-update-layout', 'value'))
+def update_layout(layout):
+    return {
+        'name': layout,
+        'directed' : True,
+        'animate': True
+    }
 
 
 @app.callback(
