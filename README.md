@@ -34,6 +34,6 @@ Commands:
 
 Options:   
 `--fasta PATH ` - fasta   
-`--enhancer PATH` - ROSE2 output of annotated (super)enhancer
+`--enhancer PATH` - ROSE2 output of annotated (super)enhancer  
 `--mapping PATH` - Motif ID to gene ID mapping file   
 `--help` - Show this message and exit  
