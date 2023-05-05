@@ -1,6 +1,9 @@
 import os
 import logging
 import argparse
+import networkx as nx
+import pandas as pd
+
 
 SCRIPT_PATH = os.path.abspath(__file__)
 FORMAT = '[%(asctime)s] %(levelname)s %(message)s'
@@ -26,7 +29,6 @@ def parse_bed(_infile):
     edgelist: [['A', 'BAR'], ['B', 'BAR'], ['C', 'BAR'], ['FOO', 'X'], ['FOO', 'Y'], ['FOO', 'Z'], ['JANE1', 'DOE']]
 
     '''
-    import pandas as pd
     df = pd.read_csv(_infile, sep='\t')
     df = df[['gene','motif']] # these names are mocked. 
     df2=df.dropna()
@@ -61,8 +63,6 @@ def networkX_helpers(input_TFbed):
   text file with indegree and outdegree counts. 
 
   '''
-
-  import networkx as nx
 
   # Create a networkx graph object
   info("Initializing Graph")
