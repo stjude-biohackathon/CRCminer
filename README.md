@@ -3,10 +3,37 @@ Transcription factors are responsible for controlling the activation and deactiv
 
 
 ## Dependencies 
-Python
-Pymemesuite
-Pyfaidx 
-Biopython
-Networkx
-Pyranges 
-Pandas
+
+* Python
+* Pymemesuite
+* Pyfaidx 
+* Biopython
+* Networkx
+* Pyranges 
+* Pandas
+* Sphinx
+
+## Install
+
+```
+pip install crcminer
+```
+
+## Usage
+
+As a command line tool
+
+```
+crcminer.py [commands]
+```
+
+Commands:  
+`compare`  - Compare two networks  
+`mine` - Mines for CRC  
+`report` - report vizualization
+
+Options:   
+`--fasta PATH ` - fasta   
+`--enhancer PATH` - ROSE2 output of annotated (super)enhancer
+`--mapping PATH` - Motif ID to gene ID mapping file   
+`--help` - Show this message and exit  
