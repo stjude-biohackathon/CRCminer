@@ -24,7 +24,7 @@ pip install crcminer
 As a command line tool
 
 ```
-crcminer.py [commands]
+crcminer.py [commands] [Options]
 ```
 
 Commands:  
