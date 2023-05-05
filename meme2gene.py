@@ -32,38 +32,49 @@ geneAnns= mg.querymany(genes, scopes='symbol', fields='entrezgene,symbol,ensembl
 
 key = "ensembl"
 exception_count = 0
-for ann in geneAnns:
-    # check if ensembl key is available
-    nf = False
-    try:
-        e = ann['ensembl']
-    except KeyError:
-        # if no ensembl key 
-        nf = True
 
-    # if ensembl data found
-    if not nf:
-        # check if ann['ensembl']['gene'] value is an array
-        if e.__class__() == []: 
-            # if array
-            # walk over the array items and collect ens gene ids and concat
-            ensemblId = ';'.join( [i['gene'] for i in e] )
-        else:
-            # if not array
-            ensemblId = e['gene']
+with open("Homo_sapiens.id_map.csv", "w") as out:
+    for ann in geneAnns:
+        query = ann["query"]
+        motif = list( filter(lambda x: motifs_dict[x] == query, motifs_dict))[0]
         
-        symbol = ann['symbol']
+        if "notfound" in ann:
+            print(f"{motif},{query},notfound,notfound,notfound", file = out)
+            continue
         
+        if query != ann["symbol"]:
+            print(f"{motif},{query},badmatch,badmatch,badmatch", file = out)
+            continue
+        
+        # check if ensembl key is available
+        nf = False
         try:
-            entrezId = ann['entrezgene']
+            e = ann['ensembl']
         except KeyError:
-            entrezId = "notfound"
+            # if no ensembl key 
+            nf = True
+
+        # if ensembl data found
+        if not nf:
+            # check if ann['ensembl']['gene'] value is an array
+            if e.__class__() == []: 
+                # if array
+                # walk over the array items and collect ens gene ids and concat
+                ensemblId = ';'.join( [i['gene'] for i in e] )
+            else:
+                # if not array
+                ensemblId = e['gene']
             
-        # find the motif based on symbol 
-        motif = list( filter(lambda x: motifs_dict[x] == symbol, motifs_dict))[0]
-        print(f"MOTIF {motif} {symbol}, {symbol}, {symbol}, {entrezId}, {ensemblId}")
-    else:
-        # if no ensembl data found
-        print(f"MOTIF {motif} {symbol}, {symbol}, {symbol}, notfound, notfound")
+            symbol = ann['symbol']
+            
+            try:
+                entrezId = ann['entrezgene']
+            except KeyError:
+                entrezId = "notfound"
+                
+            print(f"{motif},{query},{symbol},{entrezId},{ensemblId}", file = out)
+        else:
+            # if no ensembl data found
+            print(f"{motif},{query},{symbol},notfound,notfound", file = out)
         
  
