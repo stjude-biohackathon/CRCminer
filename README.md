@@ -24,7 +24,7 @@ pip install crcminer
 As a command line tool
 
 ```
-crcminer.py [commands] [Options]
+python crcminer.py report [commands] 
 ```
 
 Commands:  
@@ -32,7 +32,11 @@ Commands:
 `mine` - Mines for CRC  
 `report` - report vizualization
 
-Options:   
+`compare` command options :
+
+
+
+`mine` command options :   
 `--fasta PATH ` - fasta   
 `--enhancer PATH` - ROSE2 output of annotated (super)enhancer  
 `--mapping PATH` - Motif ID to gene ID mapping file   
