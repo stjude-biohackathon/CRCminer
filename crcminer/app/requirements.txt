@@ -3,3 +3,4 @@ dash-bootstrap-components==1.4.1
 dash-cytoscape==0.3.0
 pandas==2.0.1
 seaborn==0.12.2
+plotly==4.14

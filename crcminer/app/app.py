@@ -9,6 +9,7 @@ import dash_bootstrap_components as dbc
 from dash import Input, Output, dcc, State, html
 import dash_cytoscape as cyto
 import pandas as pd
+import plotly.express as px
 
 
 # Styles for network
@@ -113,11 +114,15 @@ logoContent = dbc.CardImg(src=logoImageUrl, style={'height':'10%'}, top=True)
 
 # Sample Data load from csv
 
-fname = "./data/sample.csv"
+fname = "./data/sample_2.csv"
 netInputDf = readFile(fname)
 
-metafn = "./data/nodes.csv"
+metafn = "./data/nodes_2.csv"
 metaDf = readFile(metafn)
+
+cliqueFn = "./data/TF_Degrees.csv"
+cliqueDf = pd.read_csv(cliqueFn).sort_values(by = 'TF_CliqueFraction', ascending=False)
+cliquePlot = px.bar(data_frame=cliqueDf, x = 'TF', y='TF_CliqueFraction')
 
 nodes = getUniqueNodes(netInputDf['node'].unique(), netInputDf['edge'], metaDict, metaDf)
 edges = getEdges(netInputDf['node'], netInputDf['edge'])
@@ -132,6 +137,27 @@ cytoObject = cyto.Cytoscape(
             'name': 'cose', 'directed' : True,
         }
     )
+
+# Group comparison
+
+sampleA = pd.read_csv("./data/E_DEGREE_TABLE.txt", sep= "\t")
+sampleB = pd.read_csv("./data/H_DEGREE_TABLE.txt", sep= "\t")
+groupData = pd.merge(sampleA, sampleB, on='Tf', how='left').fillna(0)
+
+groupData['deltaInDegree'] = groupData['In_Degree_x'] - groupData['In_Degree_y']
+groupData['deltaOutDegree'] = groupData['Out_Degree_x'] - groupData['Out_Degree_y']
+
+fig = px.scatter(data_frame=groupData, 
+                     x = 'deltaOutDegree', y = 'deltaInDegree', 
+                     hover_data = groupData
+                )
+
+fig.add_hline(y=0)
+fig.add_vline(x=0)
+fig.update_traces(marker=dict(size=10,
+                              line=dict(width=2,
+                                        color='DarkSlateGrey')),
+                  selector=dict(mode='markers'))
 
 
 # Header
@@ -250,8 +276,10 @@ tab1_content = dbc.Card(
 tab2_content = dbc.Card(
     dbc.CardBody(
         [
-            html.P("Network visualization:", className="card-text"),
+            html.H5("Network visualization:", className="card-text"),
             #dcc.Input(id="input2", type="text", placeholder="Gene", debounce=True),
+            html.I(" Enhancer", className="bi bi-triangle-fill me-2"),
+            html.I(" Transcription factor", className="bi bi-circle-fill me-2"),            
             dbc.Row([
                 dbc.Col(
                     cyto.Cytoscape(
@@ -262,9 +290,38 @@ tab2_content = dbc.Card(
                         layout={
                             'name': 'cose', 'directed' : True,
                         }
-                    )
+                    ), width=8
                 ),
                 dbc.Col([
+                    dbc.Badge(
+                            "In Degree >=:", color="info", className="mr-1"
+                        ),
+                    
+                    dcc.Dropdown(
+                            id="inDegree",
+                                options=[
+                                        {"label": k, "value": k} for k in range(metaDf['In'].min(), metaDf['In'].max())
+                                ],
+                                    clearable=False,
+                                    value=metaDf['In'].min(),
+                                    style={"width": "80px"},
+                        ),
+
+                    dbc.Badge(
+                            "Out Degree >=:", color="info", className="mr-1"
+                        ),
+                    
+                    dcc.Dropdown(
+                            id="outDegree",
+                                options=[
+                                        {"label": k, "value": k} for k in range(metaDf['Out'].min(), metaDf['Out'].max())
+                                ],
+                                    clearable=False,
+                                    value=metaDf['Out'].min(),
+                                    style={"width": "80px"},
+                        ),
+
+
                     dbc.Badge(
                             "Nodes:", color="info", className="mr-1"
                         ),
@@ -279,8 +336,36 @@ tab2_content = dbc.Card(
                                     ],
                                     value=list(metaDf['node'].unique()),
                                     multi=True,
-                                    style={"width": "50%"},
+                                    style={"width": "80%"},
                                 ),
+                    
+                    dbc.Badge(
+                            "Edge color:", color="info", className="mr-1"
+                    ),
+
+                    dcc.Input(id='input-edge-color', type='text'),
+                    html.Br(),
+                    dbc.Badge(
+                            "Node color:", color="info", className="mr-1"
+                    ),
+
+                    dcc.Input(id='input-node-color', type='text'),
+
+                    html.Br(),
+                    dbc.Badge(
+                            "Layout:", color="info", className="mr-1"
+                    ),
+
+                    dcc.Dropdown(
+                            id='dropdown-update-layout',
+                            value='cose',
+                            clearable=False,
+                            options=[
+                                {'label': name.capitalize(), 'value': name}
+                                for name in ['grid', 'random', 'circle', 'cose', 'concentric']
+                            ]
+                    ),
+                    
             ]),
 
             ]),
@@ -296,8 +381,8 @@ tab2_content = dbc.Card(
 tab3_content = dbc.Card(
     dbc.CardBody(
         [
-            html.P("Network visualization:", className="card-text"),
-            cytoObject,
+            html.H5("Clique fraction plot: ", className="card-text"),
+            dcc.Graph(figure=cliquePlot),
             #network2,
         ]
     ),
@@ -310,8 +395,8 @@ tab3_content = dbc.Card(
 tab4_content = dbc.Card(
     dbc.CardBody(
         [
-            html.P("Network visualization:", className="card-text"),
-            cytoObject,
+            html.H5("Group comparison plot:", className="card-text"),
+            dcc.Graph(figure=fig),
             #network2,
         ]
     ),
@@ -327,7 +412,7 @@ tabs = dbc.Card(
                     dbc.Tab(tab1_content, label="Introduction", tab_id="tab-1"),
                     dbc.Tab(tab2_content, label="Network", tab_id="tab-2"),
                     dbc.Tab(tab3_content, label="Clique", tab_id="tab-3"),
-                    dbc.Tab(tab4_content, label="GO", tab_id="tab-4"),
+                    dbc.Tab(tab4_content, label="Group Comparison", tab_id="tab-4"),
                 ],
                 id="tabs",
                 active_tab="tab-1",
@@ -369,6 +454,66 @@ def filter_nodes(selectNodes):
     subNodes = getUniqueNodes(filterDf['node'].unique(), filterDf['edge'], metaDict, metaDf)
     subEdges = getEdges(filterDf['node'], filterDf['edge'])
     return subNodes + subEdges
+
+
+@app.callback(
+    Output("nodeDropdown", "options"),
+    Output("nodeDropdown", "value"),
+    [
+        Input("inDegree", "value"),
+        Input("outDegree", "value"),
+    ],
+)
+def filter_nodes(inputDegree, outputDegree):
+    # Generate node list
+    genes = list(metaDf.loc[(metaDf['In'] >= inputDegree) & (metaDf['Out'] >= outputDegree), 'node'])
+    dropOptions = [
+                                        {
+                                            "label": i,
+                                            "value": i,
+                                        }
+                                        for i in genes
+                                    ]
+    return dropOptions, genes
+
+
+@app.callback(Output('cytoscape-layout-2', 'layout'),
+              Input('dropdown-update-layout', 'value'))
+def update_layout(layout):
+    return {
+        'name': layout,
+        'directed' : True,
+        'animate': True
+    }
+
+
+@app.callback(Output('cytoscape-layout-2', 'stylesheet'),
+              Input('input-edge-color', 'value'),
+               Input('input-node-color', 'value'))
+def update_stylesheet(line_color, bg_color):
+    if line_color is None:
+        line_color = 'gray'
+
+    if bg_color is None:
+        bg_color = 'gray'
+
+    new_styles = [
+        {
+            'selector': 'node',
+            'style': {
+                'background-color': bg_color
+            }
+        },
+        {
+            'selector': 'edge',
+            'style': {
+                'line-color': line_color
+            }
+        }
+    ]
+
+    return extraStyle + new_styles
+
 
 
 @app.callback(
