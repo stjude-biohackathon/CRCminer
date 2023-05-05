@@ -278,6 +278,8 @@ tab2_content = dbc.Card(
         [
             html.H5("Network visualization:", className="card-text"),
             #dcc.Input(id="input2", type="text", placeholder="Gene", debounce=True),
+            html.I(" Enhancer", className="bi bi-triangle-fill me-2"),
+            html.I(" Transcription factor", className="bi bi-circle-fill me-2"),            
             dbc.Row([
                 dbc.Col(
                     cyto.Cytoscape(
