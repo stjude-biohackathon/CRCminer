@@ -41,6 +41,7 @@ def parse_bed(_infile):
 
 
 def networkX_helpers(input_TFbed):
+
   '''
   Input is a node edge list
   These will have both node and edge list 
@@ -60,54 +61,60 @@ def networkX_helpers(input_TFbed):
                             ('D', 'I'), 
                             ('A', 'A'),('H','H'),('D','D'),('H','A'),('H','D')])
   Output: 
-  text file with indegree and outdegree counts. 
+  text file with indegree, outdegree counts and CRC TF clique fractions. 
 
   '''
-
   # Create a networkx graph object
   info("Initializing Graph")
-  _graph = nx.DiGraph() 
+  _graph = nx.DiGraph()
 
   # Add edges to to the graph object
   info("Add edges to graph object")
-  _graph.add_edges_from(edge_list)
+  _graph.add_edges_from(input_nodelist)
 
-  info("Calculating indegree outdegree stats")
-  InDegreeDict = _graph.in_degree()
-  OutDegreeDict = _graph.out_degree()
+  info("Calculating in-degree out-degree stats")
 
-  # writing this out to a file
+  #degrees_dict = {node:deg for (node, deg) in _graph.degree()}
+  out_degree_dict = {node:deg for (node, deg) in _graph.out_degree()}
+  in_degree_dict = {node:deg for (node, deg) in _graph.in_degree()}
 
+  out_degree=pd.DataFrame(data={'TF':out_degree_dict.keys(), 'Out':out_degree_dict.values()})
+  in_degree=pd.DataFrame(data={'TF':in_degree_dict.keys(), 'In':in_degree_dict.values()})
 
+  NetworkMetricsOutput=pd.merge(out_degree,in_degree,left_on="TF",right_on="TF",how="outer")
+  # TOTAL DEGREE
+  NetworkMetricsOutput['Total'] = NetworkMetricsOutput['Out'] + NetworkMetricsOutput['In']
+  
   info("Fetching self Loops")
   # Self loops
-  autoregulatoryLoops = nx.selfloop_edges(_graph) # not needed?
+  #autoregulatoryLoops = nx.selfloop_edges(_graph) # not needed?
 
   selfLoops = list(nx.nodes_with_selfloops(_graph))
 
   info("Fetch selfregulatory loops")
   from itertools import product
-  pairs=[]
+  nodePairs=[]
   for ele in list(product(selfLoops,repeat=2)):
-      if ele[0] == ele[1]:
-        continue
-      pairs.append(ele)
+      if ele[0] != ele[1] and _graph.has_edge(ele[0],ele[1]) and _graph.has_edge(ele[1],ele[0]):
+          nodePairs.append(ele)
 
-  info("Fetch Clique")
-  unDirGraph = nx.from_edgelist(pairs)
+  info("Fetch Self regulating Clique")
+  unDirGraph = nx.from_edgelist(nodePairs)
   cliqueGen = nx.find_cliques_recursive(unDirGraph)
   cliqueList = list(cliqueGen)
 
   # I am not sure what this does at this point but
   # this is a place holder until SV confirms
-  cliqueGen_ALL = list(nx.find_cliques_recursive(_graph))
+  # All cliques - not needed right now (SV)
+  #cliqueGen_ALL = list(nx.find_cliques_recursive(_graph))
 
+  print("hi",len(cliqueList))
   info("Scores all the CRC's")
   '''
   ## SCORING THE CRCs using sum outdegree for each TF and dividing by the number of TFs in the clique
   '''
   cliqueRanking = []
-  outDegreeDict = my_graph.out_degree()
+  outDegreeDict = _graph.out_degree()
 
   for crcs in cliqueList:
       score = 0
@@ -116,11 +123,40 @@ def networkX_helpers(input_TFbed):
       score = score/len(crcs)
       if score > 0 and len(crcs) > 2:
           cliqueRanking.append((crcs, score))
-              
-              
-  sortCliqueRanking = sorted(cliqueRanking, reverse=True, key=lambda x:x[1])
-  
-  return  sortCliqueRanking # may be write this to table?
+
+
+  sortedRankedCliques = pd.DataFrame(sorted(cliqueRanking, reverse=True, key=lambda x:x[1]))
+
+  factorEnrichmentDict = dict.fromkeys(selfLoops,0)
+
+  info("Calculate enrichment of each TF in a CRC clique")
+  '''
+  ## Enrichment of each TF calculated as (number of CRC cliques with the given TF)/(number of CRC cliques)
+  '''
+  for crcClique in cliqueList:
+    for TF in crcClique:
+        factorEnrichmentDict[TF] += 1
+
+  factorRankingTable = dict.fromkeys(selfLoops,0)
+  for TF in selfLoops:
+        factorRankingTable[TF]=factorEnrichmentDict[TF]/float(len(cliqueRanking))
+
+
+  FactorRank=pd.DataFrame(data={'TF':factorRankingTable.keys(), 'TF_CliqueFraction':factorRankingTable.values()})
+
+  TFSpecificCliques=nx.cliques_containing_node(unDirGraph)
+
+  NetworkMetricsOutput=pd.merge(NetworkMetricsOutput,FactorRank,left_on="TF",right_on="TF",how="outer")
+
+  info("Write to file")
+  NetworkMetricsOutput.to_csv('TF_Degrees.csv',index=False)
+  sortedRankedCliques.to_csv('Putative_CRC_Cliques.csv',index=False, header=False)
+
+  #print(nx.cliques_containing_node(unDirGraph,"RFX3"))
+  #print(len(nx.cliques_containing_node(unDirGraph,"RFX3")))
+  #print(TFSpecificCliques)
+
+  return _graph
 
 
 DESCRIPTION = '''
