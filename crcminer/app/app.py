@@ -138,6 +138,27 @@ cytoObject = cyto.Cytoscape(
         }
     )
 
+# Group comparison
+
+sampleA = pd.read_csv("./data/E_DEGREE_TABLE.txt", sep= "\t")
+sampleB = pd.read_csv("./data/H_DEGREE_TABLE.txt", sep= "\t")
+groupData = pd.merge(sampleA, sampleB, on='Tf', how='left').fillna(0)
+
+groupData['deltaInDegree'] = groupData['In_Degree_x'] - groupData['In_Degree_y']
+groupData['deltaOutDegree'] = groupData['Out_Degree_x'] - groupData['Out_Degree_y']
+
+fig = px.scatter(data_frame=groupData, 
+                     x = 'deltaOutDegree', y = 'deltaInDegree', 
+                     hover_data = groupData
+                )
+
+fig.add_hline(y=0)
+fig.add_vline(x=0)
+fig.update_traces(marker=dict(size=10,
+                              line=dict(width=2,
+                                        color='DarkSlateGrey')),
+                  selector=dict(mode='markers'))
+
 
 # Header
 
@@ -315,6 +336,20 @@ tab2_content = dbc.Card(
                                     multi=True,
                                     style={"width": "80%"},
                                 ),
+                    
+                    dbc.Badge(
+                            "Edge color:", color="info", className="mr-1"
+                    ),
+
+                    dcc.Input(id='input-edge-color', type='text'),
+                    html.Br(),
+                    dbc.Badge(
+                            "Node color:", color="info", className="mr-1"
+                    ),
+
+                    dcc.Input(id='input-node-color', type='text'),
+
+                    html.Br(),
                     dbc.Badge(
                             "Layout:", color="info", className="mr-1"
                     ),
@@ -358,8 +393,8 @@ tab3_content = dbc.Card(
 tab4_content = dbc.Card(
     dbc.CardBody(
         [
-            html.P("Network visualization:", className="card-text"),
-            cytoObject,
+            html.H5("Group comparison plot:", className="card-text"),
+            dcc.Graph(figure=fig),
             #network2,
         ]
     ),
@@ -375,7 +410,7 @@ tabs = dbc.Card(
                     dbc.Tab(tab1_content, label="Introduction", tab_id="tab-1"),
                     dbc.Tab(tab2_content, label="Network", tab_id="tab-2"),
                     dbc.Tab(tab3_content, label="Clique", tab_id="tab-3"),
-                    dbc.Tab(tab4_content, label="GO", tab_id="tab-4"),
+                    dbc.Tab(tab4_content, label="Group Comparison", tab_id="tab-4"),
                 ],
                 id="tabs",
                 active_tab="tab-1",
@@ -448,6 +483,35 @@ def update_layout(layout):
         'directed' : True,
         'animate': True
     }
+
+
+@app.callback(Output('cytoscape-layout-2', 'stylesheet'),
+              Input('input-edge-color', 'value'),
+               Input('input-node-color', 'value'))
+def update_stylesheet(line_color, bg_color):
+    if line_color is None:
+        line_color = 'gray'
+
+    if bg_color is None:
+        bg_color = 'gray'
+
+    new_styles = [
+        {
+            'selector': 'node',
+            'style': {
+                'background-color': bg_color
+            }
+        },
+        {
+            'selector': 'edge',
+            'style': {
+                'line-color': line_color
+            }
+        }
+    ]
+
+    return extraStyle + new_styles
+
 
 
 @app.callback(
