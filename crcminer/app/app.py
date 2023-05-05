@@ -10,6 +10,7 @@ from dash import Input, Output, dcc, State, html
 import dash_cytoscape as cyto
 import pandas as pd
 
+
 # Styles for network
 
 styles = {
@@ -42,6 +43,16 @@ extraStyle = [
                 }
             },
 
+            # Group selectors
+            {
+                'selector': 'edge',
+                'style': {
+                    'target-arrow-shape': 'vee',
+                    'curve-style': 'bezier',
+                    #'source-arrow-shape': 'triangle',
+                }
+            },
+
             # Class selectors
             {
                 'selector': '.red',
@@ -58,16 +69,23 @@ extraStyle = [
             }
         ]
 
+metaDict = {
+    'EN' : 'red triangle',
+    'TF' : ''
+}
+
+
 # Functions
 
-def getUniqueNodes(nodeSeries, edgeSeries):
+def getUniqueNodes(nodeSeries, edgeSeries, metaDict, metaDf):
     
     nodeSet = pd.Series(list(nodeSeries) + list(edgeSeries)).unique()
-    
+    typeSet = metaDf[metaDf['node'].isin(nodeSet)]
+    typDict = dict(zip(typeSet['node'], typeSet['type']))
     return [
         {
             'data': {'id': short, 'label': label},
-            'classes': 'triangle red'
+            'classes': metaDict[typDict[label]]
         }
         for short, label in ( tuple(zip(nodeSet, nodeSet)))
     ]
@@ -98,17 +116,20 @@ logoContent = dbc.CardImg(src=logoImageUrl, style={'height':'10%'}, top=True)
 fname = "./data/sample.csv"
 netInputDf = readFile(fname)
 
-nodes = getUniqueNodes(netInputDf['node'].unique(), netInputDf['edge'])
+metafn = "./data/nodes.csv"
+metaDf = readFile(metafn)
+
+nodes = getUniqueNodes(netInputDf['node'].unique(), netInputDf['edge'], metaDict, metaDf)
 edges = getEdges(netInputDf['node'], netInputDf['edge'])
-elements = nodes + edges
+initialElements = nodes + edges
 
 cytoObject = cyto.Cytoscape(
         id='cytoscape-layout-1',
-        elements=elements,
+        elements=initialElements,
         stylesheet=extraStyle,
         style={'width': '100%', 'height': '600px'},
         layout={
-            'name': 'cose'
+            'name': 'cose', 'directed' : True,
         }
     )
 
@@ -230,7 +251,39 @@ tab2_content = dbc.Card(
     dbc.CardBody(
         [
             html.P("Network visualization:", className="card-text"),
-            cytoObject,
+            #dcc.Input(id="input2", type="text", placeholder="Gene", debounce=True),
+            dbc.Row([
+                dbc.Col(
+                    cyto.Cytoscape(
+                        id='cytoscape-layout-2',
+                        elements=initialElements,
+                        stylesheet=extraStyle,
+                        style={'width': '100%', 'height': '600px'},
+                        layout={
+                            'name': 'cose', 'directed' : True,
+                        }
+                    )
+                ),
+                dbc.Col([
+                    dbc.Badge(
+                            "Nodes:", color="info", className="mr-1"
+                        ),
+                    dcc.Dropdown(
+                                    id="nodeDropdown",
+                                    options=[
+                                        {
+                                            "label": i,
+                                            "value": i,
+                                        }
+                                        for i in metaDf['node'].unique()
+                                    ],
+                                    value=list(metaDf['node'].unique()),
+                                    multi=True,
+                                    style={"width": "50%"},
+                                ),
+            ]),
+
+            ]),
             #network2,
         ]
     ),
@@ -302,6 +355,21 @@ app.layout = html.Div(
         #tabs
     ]
 )
+
+
+@app.callback(
+    Output("cytoscape-layout-2", "elements"),
+    [
+        Input("nodeDropdown", "value"),
+    ],
+)
+def filter_nodes(selectNodes):
+    # Generate node list
+    filterDf = netInputDf[netInputDf['node'].isin(selectNodes)]
+    subNodes = getUniqueNodes(filterDf['node'].unique(), filterDf['edge'], metaDict, metaDf)
+    subEdges = getEdges(filterDf['node'], filterDf['edge'])
+    return subNodes + subEdges
+
 
 @app.callback(
     Output("collapseFlow", "is_open"),
