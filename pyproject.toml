@@ -12,6 +12,7 @@ authors = [
     ]
 license = "MIT"
 readme = "README.md"
+repository = "https://github.com/stjude-biohackathon/KIDS23-Team14"
 
 [tool.poetry.dependencies]
 python = "^3.9"
