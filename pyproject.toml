@@ -25,6 +25,9 @@ pyranges = "^0.0.124"
 [tool.poetry.group.dev.dependencies]
 Sphinx = "^7.0.0"
 
+[tool.poetry.scripts]
+CRCminer = "crcminer.crcminer:CRCminer"
+
 [build-system]
 requires = ["poetry-core"]
 build-backend = "poetry.core.masonry.api"
