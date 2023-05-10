@@ -7,8 +7,8 @@ from pymemesuite.fimo import FIMO
 
 
 def extract_sequences_from_bed(fasta_path, bed_path, output_path):
-    """Extract sequences from a FASTA file based on a BED file of regions. 
-    
+    """Extract sequences from a FASTA file based on a BED file of regions.
+
     Writes the sequences to an output file.
 
     :param fasta_path: Path to the genome FASTA file.
@@ -83,7 +83,7 @@ def get_background(fasta):
 def filter_enhancers_to_active_genes(
     active_gene_file,
     enhancers_file,
-    id_cols=["OVERLAP_GENES", "PROXIMAL_GENES", "CLOSEST_GENE"],
+    id_cols=["OVERLAP_GENES", "PROXIMAL_GENES", "CLOSEST_GENE"]
 ):
     """
     Filter enhancer file to active gene associations.
@@ -149,7 +149,7 @@ def scan_for_motifs(
     motif_id_map=None,
     active_genes=None,
     threshold=1e-4,
-    occurence_cutoff=1,
+    occurence_cutoff=1
 ):
     """
     Scan for motif occurrences in a FASTA file using FIMO.
@@ -210,7 +210,7 @@ def scan_for_motifs(
                 }
 
     # Iterate through motifs in PWM file and find instances.
-    # TODO - Multiprocessing?
+    # TODO - Multiprocessing, see https://stackoverflow.com/a/29640590/4438552
     with MotifFile(motif_file) as motif_file, open(output_file, "w") as out:
         for motif in motif_file:
             motif_id = motif.accession.decode()
