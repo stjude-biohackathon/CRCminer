@@ -35,7 +35,7 @@ styles = {
 }
 
 
-extraStyle = [   
+extraStyle = [
             # Group selectors
             {
                 'selector': 'node',
@@ -79,7 +79,7 @@ metaDict = {
 # Functions
 
 def getUniqueNodes(nodeSeries, edgeSeries, metaDict, metaDf):
-    
+
     nodeSet = pd.Series(list(nodeSeries) + list(edgeSeries)).unique()
     typeSet = metaDf[metaDf['node'].isin(nodeSet)]
     typDict = dict(zip(typeSet['node'], typeSet['type']))
@@ -104,28 +104,34 @@ def readFile(fname):
 
 # Body
 
-logoImageUrl = "https://drive.google.com/uc?export=download&id=1osFeWZEmb2ARVq99inh_vEYTUlfctms_"
+
+#logoImageUrl = "https://drive.google.com/uc?export=download&id=1osFeWZEmb2ARVq99inh_vEYTUlfctms_"
 flowImageUrl = "https://raw.githubusercontent.com/stjude-biohackathon/KIDS23-Team14/main/images/Workflow.svg"
 
 app = dash.Dash(external_stylesheets=[dbc.themes.FLATLY, dbc.icons.BOOTSTRAP])
 server = app.server
-
+logoImageUrl = app.get_asset_url('logo1.png')
 logoContent = dbc.CardImg(src=logoImageUrl, style={'height':'10%'}, top=True)
 
 # Sample Data load from csv
+sampleA = pd.read_csv("./data/group1_degreeTable.txt", sep= ",").sort_values(by = 'TF_CliqueFraction', ascending=False)
+sampleB = pd.read_csv("./data/group2_degreeTable.txt", sep= ",").sort_values(by = 'TF_CliqueFraction', ascending=False)
 
 fname = "./data/sample_2.csv"
+#fname = "./data/group1_EdgeTable.txt"
 netInputDf = readFile(fname)
 
 metafn = "./data/nodes_2.csv"
+#metafn = "./data/group1_degreeTable.txt"
 metaDf = readFile(metafn)
 
-cliqueFn = "./data/TF_Degrees.csv"
-cliqueDf = pd.read_csv(cliqueFn).sort_values(by = 'TF_CliqueFraction', ascending=False)
-cliquePlot = px.bar(data_frame=cliqueDf, x = 'TF', y='TF_CliqueFraction')
+#cliqueFn = "./data/TF_Degrees.csv"
+#cliqueDf = pd.read_csv(cliqueFn).sort_values(by = 'TF_CliqueFraction', ascending=False)
+cliquePlot = px.bar(data_frame=sampleA, x = 'TF', y='TF_CliqueFraction')
 
 nodes = getUniqueNodes(netInputDf['node'].unique(), netInputDf['edge'], metaDict, metaDf)
 edges = getEdges(netInputDf['node'], netInputDf['edge'])
+
 initialElements = nodes + edges
 
 cytoObject = cyto.Cytoscape(
@@ -140,21 +146,55 @@ cytoObject = cyto.Cytoscape(
 
 # Group comparison
 
-sampleA = pd.read_csv("./data/E_DEGREE_TABLE.txt", sep= "\t")
-sampleB = pd.read_csv("./data/H_DEGREE_TABLE.txt", sep= "\t")
-groupData = pd.merge(sampleA, sampleB, on='Tf', how='left').fillna(0)
+groupData = pd.merge(sampleA, sampleB, on='TF', how='left').fillna(0)
 
-groupData['deltaInDegree'] = groupData['In_Degree_x'] - groupData['In_Degree_y']
-groupData['deltaOutDegree'] = groupData['Out_Degree_x'] - groupData['Out_Degree_y']
+groupData['deltaInDegree'] = groupData['In_x'] - groupData['In_y']
+groupData['deltaOutDegree'] = groupData['Out_x'] - groupData['Out_y']
 
-fig = px.scatter(data_frame=groupData, 
-                     x = 'deltaOutDegree', y = 'deltaInDegree', 
+fig = px.scatter(data_frame=groupData,
+                     x = 'deltaOutDegree', y = 'deltaInDegree',
+                     labels={
+                     "deltaOutDegree": "deltaOutDegree (group1 OUT - group2 OUT degree)",
+                     "deltaInDegree": "deltaInDegree (group1 IN - group1 IN degree)",
+                     },
                      hover_data = groupData
                 )
 
 fig.add_hline(y=0)
 fig.add_vline(x=0)
 fig.update_traces(marker=dict(size=10,
+                              line=dict(width=2,
+                                        color='DarkSlateGrey')),
+                  selector=dict(mode='markers'))
+
+
+fig_CF = px.scatter(data_frame=groupData,
+                     x = 'TF_CliqueFraction_x', y = 'TF_CliqueFraction_y',
+                     labels={
+                     "TF_CliqueFraction_x": "TF Clique Fraction in group 1",
+                     "TF_CliqueFraction_y": "TF Clique Fraction in group 2",
+                     },
+                     hover_data = groupData,
+                )
+
+fig_CF.add_hline(y=0)
+fig_CF.add_vline(x=0)
+fig_CF.update_traces(marker=dict(size=10,
+                              color='#ce6c17',
+                              line=dict(width=2,
+                                        color='DarkSlateGrey')),
+                  selector=dict(mode='markers'))
+
+
+fig_In = px.scatter(data_frame=sampleA,
+                     x = 'In', y = 'Out',
+                     hover_data = sampleA
+                )
+
+fig_In.add_hline(y=0)
+fig_In.add_vline(x=0)
+fig_In.update_traces(marker=dict(size=10,
+                              color='#e2dd25',
                               line=dict(width=2,
                                         color='DarkSlateGrey')),
                   selector=dict(mode='markers'))
@@ -192,7 +232,7 @@ header = dbc.Card(
             ],
             className="align-items-center w-100",
         ),
-        
+
     ],
     style={"maxWidth": "600px"},
     className="align-items-center w-100 border-0 bg-transparent",
@@ -229,7 +269,7 @@ useCard = dbc.Card(
                         color="info",
                         outline=True,
                     ),
-                    
+
                 ]
             ),
             className="w-100 mb-3",
@@ -239,7 +279,7 @@ tab1_content = dbc.Card(
     dbc.CardBody(
         [
             dbc.Button(
-                "How to Use?", 
+                "How to Use?",
                 id="use-button",
                 className="mb-3",
                 color="info",
@@ -253,7 +293,7 @@ tab1_content = dbc.Card(
 
             html.Br(),
             dbc.Button(
-                "Overall CRC Identification workflow", 
+                "Overall CRC Identification workflow",
                 id="flow-button",
                 className="mb-3",
                 color="info",
@@ -279,7 +319,7 @@ tab2_content = dbc.Card(
             html.H5("Network visualization:", className="card-text"),
             #dcc.Input(id="input2", type="text", placeholder="Gene", debounce=True),
             html.I(" Enhancer", className="bi bi-triangle-fill me-2"),
-            html.I(" Transcription factor", className="bi bi-circle-fill me-2"),            
+            html.I(" Transcription factor", className="bi bi-circle-fill me-2"),
             dbc.Row([
                 dbc.Col(
                     cyto.Cytoscape(
@@ -296,7 +336,7 @@ tab2_content = dbc.Card(
                     dbc.Badge(
                             "In Degree >=:", color="info", className="mr-1"
                         ),
-                    
+
                     dcc.Dropdown(
                             id="inDegree",
                                 options=[
@@ -310,7 +350,7 @@ tab2_content = dbc.Card(
                     dbc.Badge(
                             "Out Degree >=:", color="info", className="mr-1"
                         ),
-                    
+
                     dcc.Dropdown(
                             id="outDegree",
                                 options=[
@@ -338,7 +378,7 @@ tab2_content = dbc.Card(
                                     multi=True,
                                     style={"width": "80%"},
                                 ),
-                    
+
                     dbc.Badge(
                             "Edge color:", color="info", className="mr-1"
                     ),
@@ -365,7 +405,7 @@ tab2_content = dbc.Card(
                                 for name in ['grid', 'random', 'circle', 'cose', 'concentric']
                             ]
                     ),
-                    
+
             ]),
 
             ]),
@@ -382,7 +422,8 @@ tab3_content = dbc.Card(
     dbc.CardBody(
         [
             html.H5("Clique fraction plot: ", className="card-text"),
-            dcc.Graph(figure=cliquePlot),
+            dcc.Graph(figure=cliquePlot, responsive=False),
+            dcc.Graph(figure=fig_In, responsive=False),
             #network2,
         ]
     ),
@@ -396,7 +437,9 @@ tab4_content = dbc.Card(
     dbc.CardBody(
         [
             html.H5("Group comparison plot:", className="card-text"),
-            dcc.Graph(figure=fig),
+            dcc.Graph(figure=fig, responsive=False),
+            dcc.Graph(figure=fig_CF, responsive=False),
+
             #network2,
         ]
     ),
@@ -411,7 +454,7 @@ tabs = dbc.Card(
                 [
                     dbc.Tab(tab1_content, label="Introduction", tab_id="tab-1"),
                     dbc.Tab(tab2_content, label="Network", tab_id="tab-2"),
-                    dbc.Tab(tab3_content, label="Clique", tab_id="tab-3"),
+                    dbc.Tab(tab3_content, label="Putative CRC TFs", tab_id="tab-3"),
                     dbc.Tab(tab4_content, label="Group Comparison", tab_id="tab-4"),
                 ],
                 id="tabs",
@@ -527,4 +570,3 @@ def toggle_collapse(n, is_open):
 
 if __name__ == "__main__":
     app.run_server(port=8888, debug=True)
-    
