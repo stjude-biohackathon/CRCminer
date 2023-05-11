@@ -3,6 +3,7 @@ import logging
 import argparse
 import networkx as nx
 import pandas as pd
+from itertools import product
 
 
 SCRIPT_PATH = os.path.abspath(__file__)
@@ -18,8 +19,12 @@ warning = l.warning
 error = l.error
 
 
-def parse_bed(_infile):
+def parse_enhancers(enhancer_bedfile, gene_col="gene", motif_col="motif"):
     """
+    Parse enhancer bed file with gene associations and motifs found in enhancer.
+
+    This file is the output of the motif scanning process.
+
     input: motif bed file
       chr	st	en	gene	motif
     chr1	10	20	A,B,C	BAR
@@ -31,19 +36,19 @@ def parse_bed(_infile):
     edgelist: [['A', 'BAR'], ['B', 'BAR'], ['C', 'BAR'], ['FOO', 'X'], ['FOO', 'Y'], ['FOO', 'Z'], ['JANE1', 'DOE']]
 
     """
-    df = pd.read_csv(_infile, sep="\t")
-    df = df[["gene", "motif"]]  # these names are mocked.
+    df = pd.read_csv(enhancer_bedfile, sep="\t")
+    df = df[[gene_col, motif_col]]  # these names are mocked.
     df2 = df.dropna()
     df2 = (
-        df2.assign(gene=df2["gene"].str.split(","), motif=df2["motif"].str.split(","))
-        .explode("gene")
-        .explode("motif")
+        df2.assign(gene=df2[gene_col].str.split(","), motif=df2[motif_col].str.split(","))
+        .explode(gene_col)
+        .explode(motif_col)
         .reset_index(drop=True)
     )
     # print(df.head())
-    _list = df2.values.tolist()  # edgelist
+    node_edge_list = df2.values.tolist()  # edgelist
 
-    return _list
+    return node_edge_list
 
 
 def networkX_helpers(input_nodelist):
@@ -70,14 +75,14 @@ def networkX_helpers(input_nodelist):
 
     """
     # Create a networkx graph object
-    info("Initializing Graph")
+    info("Initializing Graph.")
     _graph = nx.DiGraph()
 
     # Add edges to to the graph object
-    info("Add edges to graph object")
+    info("Add edges to graph object.")
     _graph.add_edges_from(input_nodelist)
 
-    info("Calculating in-degree out-degree stats")
+    info("Calculating in-degree & out-degree stats.")
 
     # degrees_dict = {node:deg for (node, deg) in _graph.degree()}
     out_degree_dict = {node: deg for (node, deg) in _graph.out_degree()}
@@ -98,14 +103,13 @@ def networkX_helpers(input_nodelist):
         NetworkMetricsOutput["Out"] + NetworkMetricsOutput["In"]
     )
 
-    info("Fetching self Loops")
+    info("Fetching self-loops.")
     # Self loops
     # autoregulatoryLoops = nx.selfloop_edges(_graph) # not needed?
 
     selfLoops = list(nx.nodes_with_selfloops(_graph))
 
-    info("Fetch selfregulatory loops")
-    from itertools import product
+    info("Fetch self-regulatory loops.")
 
     nodePairs = []
     for ele in list(product(selfLoops, repeat=2)):
@@ -116,7 +120,7 @@ def networkX_helpers(input_nodelist):
         ):
             nodePairs.append(ele)
 
-    info("Fetch Self regulating Clique")
+    info("Fetch self-regulating Cliques.")
     unDirGraph = nx.from_edgelist(nodePairs)
     cliqueGen = nx.find_cliques_recursive(unDirGraph)
     cliqueList = list(cliqueGen)
@@ -127,10 +131,11 @@ def networkX_helpers(input_nodelist):
     # cliqueGen_ALL = list(nx.find_cliques_recursive(_graph))
 
     print("hi", len(cliqueList))
-    info("Scores all the CRC's")
+    info("Scoring all CRCs by average outdegree of members.")
     """
-  ## SCORING THE CRCs using sum outdegree for each TF and dividing by the number of TFs in the clique
-  """
+    ## SCORING THE CRCs using sum outdegree for each TF and dividing by
+    ## the number of TFs in the clique
+    """
     cliqueRanking = []
     outDegreeDict = _graph.out_degree()
 
@@ -148,10 +153,10 @@ def networkX_helpers(input_nodelist):
 
     factorEnrichmentDict = dict.fromkeys(selfLoops, 0)
 
-    info("Calculate enrichment of each TF in a CRC clique")
+    info("Calculating clique membership fraction for each TF.")
     """
-  ## Enrichment of each TF calculated as (number of CRC cliques with the given TF)/(number of CRC cliques)
-  """
+    ## Enrichment of each TF calculated as (number of CRC cliques with the given TF)/(number of CRC cliques)
+    """
     for crcClique in cliqueList:
         for TF in crcClique:
             factorEnrichmentDict[TF] += 1
