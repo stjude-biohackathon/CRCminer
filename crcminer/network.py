@@ -120,7 +120,7 @@ def networkX_helpers(input_nodelist):
         ):
             nodePairs.append(ele)
 
-    info("Fetch self-regulating Cliques.")
+    info("Fetch self-regulating cliques.")
     unDirGraph = nx.from_edgelist(nodePairs)
     cliqueGen = nx.find_cliques_recursive(unDirGraph)
     cliqueList = list(cliqueGen)

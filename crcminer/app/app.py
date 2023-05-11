@@ -15,86 +15,59 @@ import plotly.express as px
 # Styles for network
 
 styles = {
-    'container': {
-        'position': 'fixed',
-        'display': 'flex',
-        'flex-direction': 'column',
-        'height': '100%',
-        'width': '100%'
+    "container": {
+        "position": "fixed",
+        "display": "flex",
+        "flex-direction": "column",
+        "height": "100%",
+        "width": "100%",
     },
-    'cy-container': {
-        'flex': '1',
-        'position': 'relative'
+    "cy-container": {"flex": "1", "position": "relative"},
+    "cytoscape": {
+        "position": "absolute",
+        "width": "100%",
+        "height": "100%",
+        "z-index": 999,
     },
-    'cytoscape': {
-        'position': 'absolute',
-        'width': '100%',
-        'height': '100%',
-        'z-index': 999
-    }
 }
 
 
-extraStyle = [   
-            # Group selectors
-            {
-                'selector': 'node',
-                'style': {
-                    'content': 'data(label)'
-                }
-            },
+extraStyle = [
+    # Group selectors
+    {"selector": "node", "style": {"content": "data(label)"}},
+    # Group selectors
+    {
+        "selector": "edge",
+        "style": {
+            "target-arrow-shape": "vee",
+            "curve-style": "bezier",
+            # 'source-arrow-shape': 'triangle',
+        },
+    },
+    # Class selectors
+    {"selector": ".red", "style": {"background-color": "red", "line-color": "red"}},
+    {"selector": ".triangle", "style": {"shape": "triangle"}},
+]
 
-            # Group selectors
-            {
-                'selector': 'edge',
-                'style': {
-                    'target-arrow-shape': 'vee',
-                    'curve-style': 'bezier',
-                    #'source-arrow-shape': 'triangle',
-                }
-            },
-
-            # Class selectors
-            {
-                'selector': '.red',
-                'style': {
-                    'background-color': 'red',
-                    'line-color': 'red'
-                }
-            },
-            {
-                'selector': '.triangle',
-                'style': {
-                    'shape': 'triangle'
-                }
-            }
-        ]
-
-metaDict = {
-    'EN' : 'red triangle',
-    'TF' : ''
-}
+metaDict = {"EN": "red triangle", "TF": ""}
 
 
 # Functions
 
+
 def getUniqueNodes(nodeSeries, edgeSeries, metaDict, metaDf):
-    
     nodeSet = pd.Series(list(nodeSeries) + list(edgeSeries)).unique()
-    typeSet = metaDf[metaDf['node'].isin(nodeSet)]
-    typDict = dict(zip(typeSet['node'], typeSet['type']))
+    typeSet = metaDf[metaDf["node"].isin(nodeSet)]
+    typDict = dict(zip(typeSet["node"], typeSet["type"]))
     return [
-        {
-            'data': {'id': short, 'label': label},
-            'classes': metaDict[typDict[label]]
-        }
-        for short, label in ( tuple(zip(nodeSet, nodeSet)))
+        {"data": {"id": short, "label": label}, "classes": metaDict[typDict[label]]}
+        for short, label in (tuple(zip(nodeSet, nodeSet)))
     ]
 
 
 def getEdges(nodeSeries, edgeSeries):
     return [
-        {'data': {'source': source, 'target': target}}
+        {"data": {"source": source, "target": target}}
         for source, target in (tuple(zip(nodeSeries, edgeSeries)))
     ]
 
@@ -102,15 +75,18 @@ def getEdges(nodeSeries, edgeSeries):
 def readFile(fname):
     return pd.read_csv(fname)
 
+
 # Body
 
-logoImageUrl = "https://drive.google.com/uc?export=download&id=1osFeWZEmb2ARVq99inh_vEYTUlfctms_"
+logoImageUrl = (
+    "https://drive.google.com/uc?export=download&id=1osFeWZEmb2ARVq99inh_vEYTUlfctms_"
+)
 flowImageUrl = "https://raw.githubusercontent.com/stjude-biohackathon/KIDS23-Team14/main/images/Workflow.svg"
 
 app = dash.Dash(external_stylesheets=[dbc.themes.FLATLY, dbc.icons.BOOTSTRAP])
 server = app.server
 
-logoContent = dbc.CardImg(src=logoImageUrl, style={'height':'10%'}, top=True)
+logoContent = dbc.CardImg(src=logoImageUrl, style={"height": "10%"}, top=True)
 
 # Sample Data load from csv
 
@@ -121,47 +97,47 @@ metafn = "./data/nodes_2.csv"
 metaDf = readFile(metafn)
 
 cliqueFn = "./data/TF_Degrees.csv"
-cliqueDf = pd.read_csv(cliqueFn).sort_values(by = 'TF_CliqueFraction', ascending=False)
-cliquePlot = px.bar(data_frame=cliqueDf, x = 'TF', y='TF_CliqueFraction')
+cliqueDf = pd.read_csv(cliqueFn).sort_values(by="TF_CliqueFraction", ascending=False)
+cliquePlot = px.bar(data_frame=cliqueDf, x="TF", y="TF_CliqueFraction")
 
-nodes = getUniqueNodes(netInputDf['node'].unique(), netInputDf['edge'], metaDict, metaDf)
-edges = getEdges(netInputDf['node'], netInputDf['edge'])
+nodes = getUniqueNodes(
+    netInputDf["node"].unique(), netInputDf["edge"], metaDict, metaDf
+)
+edges = getEdges(netInputDf["node"], netInputDf["edge"])
 initialElements = nodes + edges
 
 cytoObject = cyto.Cytoscape(
-        id='cytoscape-layout-1',
-        elements=initialElements,
-        stylesheet=extraStyle,
-        style={'width': '100%', 'height': '600px'},
-        layout={
-            'name': 'cose', 'directed' : True,
-        }
-    )
+    id="cytoscape-layout-1",
+    elements=initialElements,
+    stylesheet=extraStyle,
+    style={"width": "100%", "height": "600px"},
+    layout={
+        "name": "cose",
+        "directed": True,
+    },
+)
 
 # Group comparison
+sampleA = pd.read_csv("./data/E_DEGREE_TABLE.txt", sep="\t")
+sampleB = pd.read_csv("./data/H_DEGREE_TABLE.txt", sep="\t")
+groupData = pd.merge(sampleA, sampleB, on="Tf", how="left").fillna(0)
 
-sampleA = pd.read_csv("./data/E_DEGREE_TABLE.txt", sep= "\t")
-sampleB = pd.read_csv("./data/H_DEGREE_TABLE.txt", sep= "\t")
-groupData = pd.merge(sampleA, sampleB, on='Tf', how='left').fillna(0)
+groupData["deltaInDegree"] = groupData["In_Degree_x"] - groupData["In_Degree_y"]
+groupData["deltaOutDegree"] = groupData["Out_Degree_x"] - groupData["Out_Degree_y"]
 
-groupData['deltaInDegree'] = groupData['In_Degree_x'] - groupData['In_Degree_y']
-groupData['deltaOutDegree'] = groupData['Out_Degree_x'] - groupData['Out_Degree_y']
-
-fig = px.scatter(data_frame=groupData, 
-                     x = 'deltaOutDegree', y = 'deltaInDegree', 
-                     hover_data = groupData
-                )
+fig = px.scatter(
+    data_frame=groupData, x="deltaOutDegree", y="deltaInDegree", hover_data=groupData
+)
 
 fig.add_hline(y=0)
 fig.add_vline(x=0)
-fig.update_traces(marker=dict(size=10,
-                              line=dict(width=2,
-                                        color='DarkSlateGrey')),
-                  selector=dict(mode='markers'))
+fig.update_traces(
+    marker=dict(size=10, line=dict(width=2, color="DarkSlateGrey")),
+    selector=dict(mode="markers"),
+)
 
 
 # Header
-
 header = dbc.Card(
     [
         dbc.Row(
@@ -192,7 +168,6 @@ header = dbc.Card(
             ],
             className="align-items-center w-100",
         ),
-        
     ],
     style={"maxWidth": "600px"},
     className="align-items-center w-100 border-0 bg-transparent",
@@ -200,46 +175,43 @@ header = dbc.Card(
 
 
 ## Tab 1
-
-
-flowCard =   dbc.Card(
-            dbc.CardBody(
-                [
-                    html.H5("Stages in CRC identification", className="card-title"),
-                    dbc.CardImg(
-                        src=flowImageUrl,
-                        className="img-fluid rounded-start",
-                    )
-                ]
+flowCard = dbc.Card(
+    dbc.CardBody(
+        [
+            html.H5("Stages in CRC identification", className="card-title"),
+            dbc.CardImg(
+                src=flowImageUrl,
+                className="img-fluid rounded-start",
             ),
-            className="w-100 mb-3",
-        )
+        ]
+    ),
+    className="w-100 mb-3",
+)
 
 useCard = dbc.Card(
-                dbc.CardBody(
-                [
-                    html.P(
-                        "Please refer to the GitHub repo for details.",
-                    ),
-                    dbc.Button(
-                        html.I(" GitHub Repo", className="bi bi-github me-2"),
-                        href="https://github.com/stjude-biohackathon/KIDS23-Team14",
-                        external_link=True,
-                        target="_blank",
-                        color="info",
-                        outline=True,
-                    ),
-                    
-                ]
+    dbc.CardBody(
+        [
+            html.P(
+                "Please refer to the GitHub repo for details.",
             ),
-            className="w-100 mb-3",
-        )
+            dbc.Button(
+                html.I(" GitHub Repo", className="bi bi-github me-2"),
+                href="https://github.com/stjude-biohackathon/KIDS23-Team14",
+                external_link=True,
+                target="_blank",
+                color="info",
+                outline=True,
+            ),
+        ]
+    ),
+    className="w-100 mb-3",
+)
 
 tab1_content = dbc.Card(
     dbc.CardBody(
         [
             dbc.Button(
-                "How to Use?", 
+                "How to Use?",
                 id="use-button",
                 className="mb-3",
                 color="info",
@@ -250,16 +222,14 @@ tab1_content = dbc.Card(
                 id="collapseUse",
                 is_open=True,
             ),
-
             html.Br(),
             dbc.Button(
-                "Overall CRC Identification workflow", 
+                "Overall CRC Identification workflow",
                 id="flow-button",
                 className="mb-3",
                 color="info",
                 n_clicks=0,
             ),
-
             dbc.Collapse(
                 flowCard,
                 id="collapseFlow",
@@ -271,105 +241,97 @@ tab1_content = dbc.Card(
 )
 
 # Tab 2
-
-
 tab2_content = dbc.Card(
     dbc.CardBody(
         [
             html.H5("Network visualization:", className="card-text"),
-            #dcc.Input(id="input2", type="text", placeholder="Gene", debounce=True),
+            # dcc.Input(id="input2", type="text", placeholder="Gene", debounce=True),
             html.I(" Enhancer", className="bi bi-triangle-fill me-2"),
-            html.I(" Transcription factor", className="bi bi-circle-fill me-2"),            
-            dbc.Row([
-                dbc.Col(
-                    cyto.Cytoscape(
-                        id='cytoscape-layout-2',
-                        elements=initialElements,
-                        stylesheet=extraStyle,
-                        style={'width': '100%', 'height': '600px'},
-                        layout={
-                            'name': 'cose', 'directed' : True,
-                        }
-                    ), width=8
-                ),
-                dbc.Col([
-                    dbc.Badge(
-                            "In Degree >=:", color="info", className="mr-1"
+            html.I(" Transcription factor", className="bi bi-circle-fill me-2"),
+            dbc.Row(
+                [
+                    dbc.Col(
+                        cyto.Cytoscape(
+                            id="cytoscape-layout-2",
+                            elements=initialElements,
+                            stylesheet=extraStyle,
+                            style={"width": "100%", "height": "600px"},
+                            layout={
+                                "name": "cose",
+                                "directed": True,
+                            },
                         ),
-                    
-                    dcc.Dropdown(
-                            id="inDegree",
+                        width=8,
+                    ),
+                    dbc.Col(
+                        [
+                            dbc.Badge("In Degree >=:", color="info", className="mr-1"),
+                            dcc.Dropdown(
+                                id="inDegree",
                                 options=[
-                                        {"label": k, "value": k} for k in range(metaDf['In'].min(), metaDf['In'].max())
+                                    {"label": k, "value": k}
+                                    for k in range(
+                                        metaDf["In"].min(), metaDf["In"].max()
+                                    )
                                 ],
-                                    clearable=False,
-                                    value=metaDf['In'].min(),
-                                    style={"width": "80px"},
-                        ),
-
-                    dbc.Badge(
-                            "Out Degree >=:", color="info", className="mr-1"
-                        ),
-                    
-                    dcc.Dropdown(
-                            id="outDegree",
+                                clearable=False,
+                                value=metaDf["In"].min(),
+                                style={"width": "80px"},
+                            ),
+                            dbc.Badge("Out Degree >=:", color="info", className="mr-1"),
+                            dcc.Dropdown(
+                                id="outDegree",
                                 options=[
-                                        {"label": k, "value": k} for k in range(metaDf['Out'].min(), metaDf['Out'].max())
+                                    {"label": k, "value": k}
+                                    for k in range(
+                                        metaDf["Out"].min(), metaDf["Out"].max()
+                                    )
                                 ],
-                                    clearable=False,
-                                    value=metaDf['Out'].min(),
-                                    style={"width": "80px"},
-                        ),
-
-
-                    dbc.Badge(
-                            "Nodes:", color="info", className="mr-1"
-                        ),
-                    dcc.Dropdown(
-                                    id="nodeDropdown",
-                                    options=[
-                                        {
-                                            "label": i,
-                                            "value": i,
-                                        }
-                                        for i in metaDf['node'].unique()
-                                    ],
-                                    value=list(metaDf['node'].unique()),
-                                    multi=True,
-                                    style={"width": "80%"},
-                                ),
-                    
-                    dbc.Badge(
-                            "Edge color:", color="info", className="mr-1"
+                                clearable=False,
+                                value=metaDf["Out"].min(),
+                                style={"width": "80px"},
+                            ),
+                            dbc.Badge("Nodes:", color="info", className="mr-1"),
+                            dcc.Dropdown(
+                                id="nodeDropdown",
+                                options=[
+                                    {
+                                        "label": i,
+                                        "value": i,
+                                    }
+                                    for i in metaDf["node"].unique()
+                                ],
+                                value=list(metaDf["node"].unique()),
+                                multi=True,
+                                style={"width": "80%"},
+                            ),
+                            dbc.Badge("Edge color:", color="info", className="mr-1"),
+                            dcc.Input(id="input-edge-color", type="text"),
+                            html.Br(),
+                            dbc.Badge("Node color:", color="info", className="mr-1"),
+                            dcc.Input(id="input-node-color", type="text"),
+                            html.Br(),
+                            dbc.Badge("Layout:", color="info", className="mr-1"),
+                            dcc.Dropdown(
+                                id="dropdown-update-layout",
+                                value="cose",
+                                clearable=False,
+                                options=[
+                                    {"label": name.capitalize(), "value": name}
+                                    for name in [
+                                        "grid",
+                                        "random",
+                                        "circle",
+                                        "cose",
+                                        "concentric",
+                                    ]
+                                ],
+                            ),
+                        ]
                     ),
-
-                    dcc.Input(id='input-edge-color', type='text'),
-                    html.Br(),
-                    dbc.Badge(
-                            "Node color:", color="info", className="mr-1"
-                    ),
-
-                    dcc.Input(id='input-node-color', type='text'),
-
-                    html.Br(),
-                    dbc.Badge(
-                            "Layout:", color="info", className="mr-1"
-                    ),
-
-                    dcc.Dropdown(
-                            id='dropdown-update-layout',
-                            value='cose',
-                            clearable=False,
-                            options=[
-                                {'label': name.capitalize(), 'value': name}
-                                for name in ['grid', 'random', 'circle', 'cose', 'concentric']
-                            ]
-                    ),
-                    
-            ]),
-
-            ]),
-            #network2,
+                ]
+            ),
+            # network2,
         ]
     ),
     className="mt-3",
@@ -377,13 +339,12 @@ tab2_content = dbc.Card(
 
 
 # Tab 3
-
 tab3_content = dbc.Card(
     dbc.CardBody(
         [
             html.H5("Clique fraction plot: ", className="card-text"),
             dcc.Graph(figure=cliquePlot),
-            #network2,
+            # network2,
         ]
     ),
     className="mt-3",
@@ -391,13 +352,12 @@ tab3_content = dbc.Card(
 
 
 # Tab 4
-
 tab4_content = dbc.Card(
     dbc.CardBody(
         [
             html.H5("Group comparison plot:", className="card-text"),
             dcc.Graph(figure=fig),
-            #network2,
+            # network2,
         ]
     ),
     className="mt-3",
@@ -420,24 +380,20 @@ tabs = dbc.Card(
         ),
         dbc.CardBody(html.P(id="card-content", className="card-text")),
     ],
-    style={'height':'100vh'}
+    style={"height": "100vh"},
 )
 
-# Tab 3
-
-
 # App layout
-
 app.layout = html.Div(
     [
-        #hpage,
+        # hpage,
         dbc.Row(
-                dbc.Col(header, width=12),
+            dbc.Col(header, width=12),
         ),
         dbc.Row(
             dbc.Col(tabs),
         ),
-        #tabs
+        # tabs
     ]
 )
 
@@ -450,9 +406,11 @@ app.layout = html.Div(
 )
 def filter_nodes(selectNodes):
     # Generate node list
-    filterDf = netInputDf[netInputDf['node'].isin(selectNodes)]
-    subNodes = getUniqueNodes(filterDf['node'].unique(), filterDf['edge'], metaDict, metaDf)
-    subEdges = getEdges(filterDf['node'], filterDf['edge'])
+    filterDf = netInputDf[netInputDf["node"].isin(selectNodes)]
+    subNodes = getUniqueNodes(
+        filterDf["node"].unique(), filterDf["edge"], metaDict, metaDf
+    )
+    subEdges = getEdges(filterDf["node"], filterDf["edge"])
     return subNodes + subEdges
 
 
@@ -466,54 +424,46 @@ def filter_nodes(selectNodes):
 )
 def filter_nodes(inputDegree, outputDegree):
     # Generate node list
-    genes = list(metaDf.loc[(metaDf['In'] >= inputDegree) & (metaDf['Out'] >= outputDegree), 'node'])
+    genes = list(
+        metaDf.loc[
+            (metaDf["In"] >= inputDegree) & (metaDf["Out"] >= outputDegree), "node"
+        ]
+    )
     dropOptions = [
-                                        {
-                                            "label": i,
-                                            "value": i,
-                                        }
-                                        for i in genes
-                                    ]
+        {
+            "label": i,
+            "value": i,
+        }
+        for i in genes
+    ]
     return dropOptions, genes
 
 
-@app.callback(Output('cytoscape-layout-2', 'layout'),
-              Input('dropdown-update-layout', 'value'))
+@app.callback(
+    Output("cytoscape-layout-2", "layout"), Input("dropdown-update-layout", "value")
+)
 def update_layout(layout):
-    return {
-        'name': layout,
-        'directed' : True,
-        'animate': True
-    }
+    return {"name": layout, "directed": True, "animate": True}
 
 
-@app.callback(Output('cytoscape-layout-2', 'stylesheet'),
-              Input('input-edge-color', 'value'),
-               Input('input-node-color', 'value'))
+@app.callback(
+    Output("cytoscape-layout-2", "stylesheet"),
+    Input("input-edge-color", "value"),
+    Input("input-node-color", "value"),
+)
 def update_stylesheet(line_color, bg_color):
     if line_color is None:
-        line_color = 'gray'
+        line_color = "gray"
 
     if bg_color is None:
-        bg_color = 'gray'
+        bg_color = "gray"
 
     new_styles = [
-        {
-            'selector': 'node',
-            'style': {
-                'background-color': bg_color
-            }
-        },
-        {
-            'selector': 'edge',
-            'style': {
-                'line-color': line_color
-            }
-        }
+        {"selector": "node", "style": {"background-color": bg_color}},
+        {"selector": "edge", "style": {"line-color": line_color}},
     ]
 
     return extraStyle + new_styles
-
 
 
 @app.callback(
@@ -527,4 +477,3 @@ def toggle_collapse(n, is_open):
 
 if __name__ == "__main__":
     app.run_server(port=8888, debug=True)
-    
