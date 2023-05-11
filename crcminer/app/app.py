@@ -422,8 +422,8 @@ tab3_content = dbc.Card(
     dbc.CardBody(
         [
             html.H5("Clique fraction plot: ", className="card-text"),
-            dcc.Graph(figure=cliquePlot, responsive=False),
-            dcc.Graph(figure=fig_In, responsive=False),
+            dcc.Graph(figure=cliquePlot, responsive=True),
+            dcc.Graph(figure=fig_In, responsive=True),
             #network2,
         ]
     ),
