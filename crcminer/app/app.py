@@ -41,7 +41,6 @@ extraStyle = [
         "style": {
             "target-arrow-shape": "vee",
             "curve-style": "bezier",
-            #'source-arrow-shape': 'triangle',
         },
     },
     # Class selectors
@@ -78,13 +77,13 @@ def readFile(fname):
 
 # Body
 
-
-# logoImageUrl = "https://drive.google.com/uc?export=download&id=1osFeWZEmb2ARVq99inh_vEYTUlfctms_"
 flowImageUrl = "https://raw.githubusercontent.com/stjude-biohackathon/KIDS23-Team14/main/images/Workflow.svg"
 
 app = dash.Dash(external_stylesheets=[dbc.themes.FLATLY, dbc.icons.BOOTSTRAP])
 server = app.server
+
 logoImageUrl = app.get_asset_url("logo1.png")
+
 logoContent = dbc.CardImg(src=logoImageUrl, style={"height": "10%"}, top=True)
 
 # Sample Data load from csv
@@ -131,6 +130,9 @@ cytoObject = cyto.Cytoscape(
 )
 
 # Group comparison
+sampleA = pd.read_csv("./data/E_DEGREE_TABLE.txt", sep="\t")
+sampleB = pd.read_csv("./data/H_DEGREE_TABLE.txt", sep="\t")
+groupData = pd.merge(sampleA, sampleB, on="Tf", how="left").fillna(0)
 
 groupData = pd.merge(sampleA, sampleB, on="TF", how="left").fillna(0)
 
@@ -154,7 +156,6 @@ fig.update_traces(
     marker=dict(size=10, line=dict(width=2, color="DarkSlateGrey")),
     selector=dict(mode="markers"),
 )
-
 
 fig_CF = px.scatter(
     data_frame=groupData,
@@ -186,7 +187,6 @@ fig_In.update_traces(
 
 
 # Header
-
 header = dbc.Card(
     [
         dbc.Row(
@@ -224,8 +224,6 @@ header = dbc.Card(
 
 
 ## Tab 1
-
-
 flowCard = dbc.Card(
     dbc.CardBody(
         [
@@ -300,8 +298,6 @@ tab1_content = dbc.Card(
 )
 
 # Tab 2
-
-
 tab2_content = dbc.Card(
     dbc.CardBody(
         [
@@ -400,7 +396,6 @@ tab2_content = dbc.Card(
 
 
 # Tab 3
-
 tab3_content = dbc.Card(
     dbc.CardBody(
         [
@@ -423,7 +418,6 @@ tab3_content = dbc.Card(
 
 
 # Tab 4
-
 tab4_content = dbc.Card(
     dbc.CardBody(
         [
@@ -464,11 +458,7 @@ tabs = dbc.Card(
     style={"height": "100vh"},
 )
 
-# Tab 3
-
-
 # App layout
-
 app.layout = html.Div(
     [
         # hpage,
