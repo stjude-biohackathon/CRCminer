@@ -41,7 +41,6 @@ extraStyle = [
         "style": {
             "target-arrow-shape": "vee",
             "curve-style": "bezier",
-            # 'source-arrow-shape': 'triangle',
         },
     },
     # Class selectors
@@ -78,32 +77,45 @@ def readFile(fname):
 
 # Body
 
-logoImageUrl = (
-    "https://drive.google.com/uc?export=download&id=1osFeWZEmb2ARVq99inh_vEYTUlfctms_"
-)
 flowImageUrl = "https://raw.githubusercontent.com/stjude-biohackathon/KIDS23-Team14/main/images/Workflow.svg"
 
 app = dash.Dash(external_stylesheets=[dbc.themes.FLATLY, dbc.icons.BOOTSTRAP])
 server = app.server
 
+logoImageUrl = app.get_asset_url("logo1.png")
+
 logoContent = dbc.CardImg(src=logoImageUrl, style={"height": "10%"}, top=True)
 
 # Sample Data load from csv
+sampleA = pd.read_csv("./data/group1_degreeTable.txt", sep=",").sort_values(
+    by="TF_CliqueFraction", ascending=False
+)
+sampleB = pd.read_csv("./data/group2_degreeTable.txt", sep=",").sort_values(
+    by="TF_CliqueFraction", ascending=False
+)
 
 fname = "./data/sample_2.csv"
+# fname = "./data/group1_EdgeTable.txt"
 netInputDf = readFile(fname)
 
 metafn = "./data/nodes_2.csv"
+# metafn = "./data/group1_degreeTable.txt"
 metaDf = readFile(metafn)
 
-cliqueFn = "./data/TF_Degrees.csv"
-cliqueDf = pd.read_csv(cliqueFn).sort_values(by="TF_CliqueFraction", ascending=False)
-cliquePlot = px.bar(data_frame=cliqueDf, x="TF", y="TF_CliqueFraction")
+# cliqueFn = "./data/TF_Degrees.csv"
+# cliqueDf = pd.read_csv(cliqueFn).sort_values(by = 'TF_CliqueFraction', ascending=False)
+cliquePlot = px.bar(
+    data_frame=sampleA.loc[sampleA["TF_CliqueFraction"] > 0.1],
+    x="TF",
+    y="TF_CliqueFraction",
+)
+cliquePlot.update_layout(xaxis=dict(tickfont=dict(size=14)))
 
 nodes = getUniqueNodes(
     netInputDf["node"].unique(), netInputDf["edge"], metaDict, metaDf
 )
 edges = getEdges(netInputDf["node"], netInputDf["edge"])
+
 initialElements = nodes + edges
 
 cytoObject = cyto.Cytoscape(
@@ -122,17 +134,54 @@ sampleA = pd.read_csv("./data/E_DEGREE_TABLE.txt", sep="\t")
 sampleB = pd.read_csv("./data/H_DEGREE_TABLE.txt", sep="\t")
 groupData = pd.merge(sampleA, sampleB, on="Tf", how="left").fillna(0)
 
-groupData["deltaInDegree"] = groupData["In_Degree_x"] - groupData["In_Degree_y"]
-groupData["deltaOutDegree"] = groupData["Out_Degree_x"] - groupData["Out_Degree_y"]
+groupData = pd.merge(sampleA, sampleB, on="TF", how="left").fillna(0)
+
+groupData["deltaInDegree"] = groupData["In_x"] - groupData["In_y"]
+groupData["deltaOutDegree"] = groupData["Out_x"] - groupData["Out_y"]
 
 fig = px.scatter(
-    data_frame=groupData, x="deltaOutDegree", y="deltaInDegree", hover_data=groupData
+    data_frame=groupData,
+    x="deltaOutDegree",
+    y="deltaInDegree",
+    labels={
+        "deltaOutDegree": "deltaOutDegree (group1 OUT - group2 OUT degree)",
+        "deltaInDegree": "deltaInDegree (group1 IN - group1 IN degree)",
+    },
+    hover_data=groupData,
 )
 
 fig.add_hline(y=0)
 fig.add_vline(x=0)
 fig.update_traces(
     marker=dict(size=10, line=dict(width=2, color="DarkSlateGrey")),
+    selector=dict(mode="markers"),
+)
+
+fig_CF = px.scatter(
+    data_frame=groupData,
+    x="TF_CliqueFraction_x",
+    y="TF_CliqueFraction_y",
+    labels={
+        "TF_CliqueFraction_x": "TF Clique Fraction in group 1",
+        "TF_CliqueFraction_y": "TF Clique Fraction in group 2",
+    },
+    hover_data=groupData,
+)
+
+fig_CF.add_hline(y=0)
+fig_CF.add_vline(x=0)
+fig_CF.update_traces(
+    marker=dict(size=10, color="#ce6c17", line=dict(width=2, color="DarkSlateGrey")),
+    selector=dict(mode="markers"),
+)
+
+
+fig_In = px.scatter(data_frame=sampleA, x="In", y="Out", hover_data=sampleA)
+
+fig_In.add_hline(y=0)
+fig_In.add_vline(x=0)
+fig_In.update_traces(
+    marker=dict(size=10, color="#e2dd25", line=dict(width=2, color="DarkSlateGrey")),
     selector=dict(mode="markers"),
 )
 
@@ -179,9 +228,17 @@ flowCard = dbc.Card(
     dbc.CardBody(
         [
             html.H5("Stages in CRC identification", className="card-title"),
-            dbc.CardImg(
-                src=flowImageUrl,
-                className="img-fluid rounded-start",
+            dbc.Row(
+                [
+                    dbc.Col(
+                        dbc.CardImg(
+                            src=flowImageUrl,
+                            className="img-fluid rounded-start",
+                            style={"height": "85%", "width": "85%"},
+                        ),
+                        className="justify-content-center align-items-center",
+                    )
+                ]
             ),
         ]
     ),
@@ -343,7 +400,16 @@ tab3_content = dbc.Card(
     dbc.CardBody(
         [
             html.H5("Clique fraction plot: ", className="card-text"),
-            dcc.Graph(figure=cliquePlot),
+            dcc.Graph(
+                figure=cliquePlot,
+                responsive=True,
+                style={"display": "inline-block", "width": "50%"},
+            ),
+            dcc.Graph(
+                figure=fig_In,
+                responsive=True,
+                style={"display": "inline-block", "width": "50%"},
+            ),
             # network2,
         ]
     ),
@@ -356,7 +422,16 @@ tab4_content = dbc.Card(
     dbc.CardBody(
         [
             html.H5("Group comparison plot:", className="card-text"),
-            dcc.Graph(figure=fig),
+            dcc.Graph(
+                figure=fig,
+                responsive=False,
+                style={"display": "inline-block", "width": "50%"},
+            ),
+            dcc.Graph(
+                figure=fig_CF,
+                responsive=False,
+                style={"display": "inline-block", "width": "50%"},
+            ),
             # network2,
         ]
     ),
@@ -371,7 +446,7 @@ tabs = dbc.Card(
                 [
                     dbc.Tab(tab1_content, label="Introduction", tab_id="tab-1"),
                     dbc.Tab(tab2_content, label="Network", tab_id="tab-2"),
-                    dbc.Tab(tab3_content, label="Clique", tab_id="tab-3"),
+                    dbc.Tab(tab3_content, label="Putative CRC TFs", tab_id="tab-3"),
                     dbc.Tab(tab4_content, label="Group Comparison", tab_id="tab-4"),
                 ],
                 id="tabs",
