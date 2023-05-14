@@ -130,10 +130,6 @@ cytoObject = cyto.Cytoscape(
 )
 
 # Group comparison
-sampleA = pd.read_csv("./data/E_DEGREE_TABLE.txt", sep="\t")
-sampleB = pd.read_csv("./data/H_DEGREE_TABLE.txt", sep="\t")
-groupData = pd.merge(sampleA, sampleB, on="Tf", how="left").fillna(0)
-
 groupData = pd.merge(sampleA, sampleB, on="TF", how="left").fillna(0)
 
 groupData["deltaInDegree"] = groupData["In_x"] - groupData["In_y"]
