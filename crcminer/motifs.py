@@ -6,7 +6,7 @@ import Bio.SeqIO
 from pymemesuite.fimo import FIMO
 
 
-def extract_sequences_from_bed(fasta_path, bed_path, output_path):
+def extract_sequences_from_fasta(fasta_path, bed_path, output_path):
     """Extract sequences from a FASTA file based on a BED file of regions.
 
     Writes the sequences to an output file.
@@ -116,7 +116,6 @@ def filter_enhancers_to_active_genes(
     enh_df = pd.read_table(enhancers_file)
 
     # TODO - Test, this may not actually work. 
-    # Definitely throws a warning if it does.
 
     # concatenate and uniquify values across columns
     enh_df["all_genes"] = (
@@ -224,10 +223,13 @@ def scan_for_motifs(
                 else:
                     motif_id = motif.accession.decode()
 
-                if motif_id not in active_genes:
+                # Deal with multiple gene IDs here.
+                motif_id = [s in active_genes for s in motif_id.split(";")]
+                
+                if len(motif_id) == 0:
                     continue
 
-            print("Scanning for occurrences of " + motif_id)
+            print("Scanning for occurrences of " + ";".join(motif_id))
 
             # Scan for motif instances.
             pattern = fimo.score_motif(motif, sequences, fimo_background)
