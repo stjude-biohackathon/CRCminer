@@ -33,7 +33,7 @@ def CRCminer():
               help="Motif accession to gene ID mapping file.",
               required=False)
 @click.option("--name", type=click.Path(), help="Analysis name, used to name output files and directory.")
-def mine(fasta, enhancer, mapping):
+def mine(fasta, enhancer, mapping, threshold, subpeaks, active, name):
     pass
 
 
