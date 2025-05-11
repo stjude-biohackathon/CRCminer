@@ -1,56 +1,78 @@
-# CRCminer
-Transcription factors are responsible for controlling the activation and deactivation of genes and usually work together in combinations. Researchers studying embryonic stem cells and other types of cells have discovered a group of transcription factors that regulate cell identity and state. These key transcription factors create interconnected loops that reinforce the specific gene-expression program unique to each cell type. This collection of core transcription factors and their regulatory loops is known as the core transcriptional regulatory circuitry. CRCminer takes advantage of the fact that a vast majority of prominent master transcription factors are governed by super enhancers and that they control the enhancers of other master transcription factors. Upon receiving a set of super enhancers and a catalog of active genes as input, CRC analysis goes on to meticulously compute the IN and OUT degrees of each transcription factor. IN degree quantifies the number of unique transcription factors that regulate the given gene, whereas OUT degree denotes the count of other transcription factors regulated by the same transcription factor. This intricate and sophisticated approach provides an in-depth and nuanced comprehension of the core transcriptional regulatory circuitry, enabling researchers to unravel its mysteries with precision and accuracy.
+<p align="center" width="100%">
+    <img src="images/logo.png" alt="CRCminer" height="330">
+</p>
 
-![image](https://user-images.githubusercontent.com/107953299/236574166-e05eb6db-fa48-4730-999d-8bc26265a523.png)
+---
 
-Source: https://github.com/linlabcode/CRC
+Core regulatory circuitries (AKA CRCs) are dense networks of self-regulating transcription factors responsible for driving and maintaining cell state.
+Members of CRCs are typically regulated by super enhancers.
+**CRCminer** is designed to identify such CRCs and provide utilities to compare and visualize them.
 
+This project was conceptualized for and initially developed during the [St. Jude Children's Research Hospital KIDS23 BioHackathon](https://github.com/stjude-biohackathon) by:
+- Jared Andrews (team lead)
+- Achisha Saikia
+- Srinidhi Varadharajan 
+- Sridhar N
+- Pandurang Kolekar
+- Vidhya Jagannathan
 
+It even snagged a prize for "Most Technically Impressive" project.
 
-## Dependencies 
+## Workflow
 
-* Python
-* Pymemesuite
-* Pyfaidx 
-* Biopython
-* Networkx
-* Pyranges 
-* Pandas
-* Sphinx
-* Dash
-* Cytoscape
-* Plotly
+<p align="center" width="100%">
+    <img src="images/Workflow.png" alt="CRCminer workflow">
+</p>
 
 ## Install
 
+This package is under active development and may break at any time.
+It is not yet recommended for production use.
+
 ```
-pip install crcminer
+pip install git+https://github.com/j-andrews7/CRCminer.git
 ```
 
 ## Usage
 
-As a command line tool
-
 ```
-python crcminer.py report [commands] 
+CRCminer [command] 
 ```
 
 Commands:  
-`compare`  - Compare two networks  
-`mine` - Mines for CRC  
-`report` - report vizualization
+ - `mine` - Identifies putative CRC members from a set of enhancer regions.
+ - `compare`  - Compare two networks as returned with `mine`.
+ - `report` - Launch an interactive dashboard for viewing `mine` and `compare` results.
 
-`compare` command options :  
+---
 
-Compare two networks
+`CRCminer mine` command options:     
+
+Identifies putative CRC members in a given sample.
+
+ - `--fasta PATH ` - Genome FASTA file.   
+ - `--enhancer PATH` - Path to annotated (super)enhancer file, as output by ROSE.
+ - `--subpeaks PATH` - Path to BED file of subpeaks to scan for motifs. Will be limited to those within enhancer regions.
+ - `--mapping PATH` - Motif ID to gene ID mapping file.
+ - `--active PATH` - File containing active or expressed genes, one per line. 
+    Genes not found in this list will be excluded from the networks and motif scanning.
+ - `--threshold FLOAT` - p-value threshold for determining significant motif matches.
+ - `--help` - Show this message and exit.
+
+---
+
+`CRCminer compare` command options:
+
+ - `--sample1 PATH` - CRCminer `mine` output directory from a sample.
+ - `--sample2 PATH` - CRCminer `mine` output directory from a sample.
+
+---
+
+`CRCminer report` command options:
+
+ - `--indir PATH(s)` - Paths to one or more input directory containing CRCminer results.
 
 
+## References
 
-`mine` command options :     
-
-mines for CRC
-
-`--fasta PATH ` - fasta   
-`--enhancer PATH` - ROSE2 output of annotated (super)enhancer  
-`--mapping PATH` - Motif ID to gene ID mapping file   
-`--help` - Show this message and exit  
+CRCminer is heavily inspired by [coltron](https://pypi.org/project/coltron/).

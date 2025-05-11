@@ -13,7 +13,7 @@ def CRCminer():
 
 
 @CRCminer.command(name="mine",
-                  help="Identifies CRCs in a given sample.")
+                  help="Identifies putative CRC members in a given sample.")
 @click.option("--fasta", type=click.Path(),
               help="Genome FASTA file.",
               required=True)
